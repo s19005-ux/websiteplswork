@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your website description here">
+    <meta name="keywords" content="your, keywords, here">
+    <meta name="author" content="Your Name">
+    <title>QR Code Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #qrButton {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        #qrCode {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            /* Set the overlay to be 50% of the screen width and height */
+            width: 50%;
+            height: 50%;
+        }
+
+        #closeButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* Style the QR code image to fill its container */
+        #qrCode img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <button id="qrButton">Generate QR Code</button>
+
+    <div id="overlay">
+        <div id="qrCode">
+            <span id="closeButton" onclick="closeOverlay()">&#215;</span>
+            <!-- Your QR code image as a base64 data URI -->
+            <img src="frame.png" alt="QR Code">
+        </div>
+    </div>
+
+    <script>
+        const qrButton = document.getElementById('qrButton');
+        const overlay = document.getElementById('overlay');
+
+        qrButton.addEventListener('click', () => {
+            overlay.style.display = 'block';
+        });
+
+        function closeOverlay() {
+            overlay.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
