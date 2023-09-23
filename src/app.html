@@ -1,0 +1,328 @@
+<html>
+<head>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    img {
+      display: block;
+      width: 224px;
+      height: 224px;
+      margin-right: 20px;
+      border-radius: 8px;
+    }
+
+    .credit {
+      margin-top: 6px;
+      display: inline-block;
+      font-size: 12px;
+      color: #999;
+    }
+
+    canvas {
+      border-radius: 8px;
+      position: absolute;
+    }
+
+    .result-container {
+      position: relative;
+      width: 224px;
+      height: 224px;
+    }
+
+    .trigger {
+      border: 1px dashed #ccc;
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #e28843;
+    }
+
+    .trigger:hover {
+      background-color: #eee;
+    }
+
+    .hide {
+      display: none;
+    }
+        /* Style for the video container */
+        #video-container {
+        position: relative;
+    }
+
+    /* Style for the video element */
+    #camera-feed {
+        width: 100%;
+        height: auto;
+    }
+
+    /* Style for the floating button */
+    #floating-button {
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        padding: 10px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 10%;
+        cursor: pointer;
+    }
+    .pantry {
+        color: orangered;
+        font-style: bold;
+    }
+    .refrigerate {
+        color: darkcyan;
+        font-style: bold;
+    }
+    .freeze {
+        color: darkblue;
+        font-style: bold;
+    }
+    .pantry_tips {
+        color: brown;
+        font-size: 1rem;
+        background-color: lightyellow;
+    }
+    .refrigerate_tips {
+        color: black;
+        font-size: 1rem;
+        background-color: lightblue;
+    }
+    ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    li {
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    a {
+      color: blue;
+      text-decoration: none;
+    }
+
+    .fas {
+      font-size: 20px;
+      color: blue;
+    }
+
+
+  </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.1/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite@0.0.1-alpha.6/dist/tf-tflite.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes"> 
+  
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 class="text-center">Smart food waste bin</h1>
+      <ul>
+        <li>Signed in</li>
+        <li><a href="index.html">Sign out</a></li>
+        <li><a href="history.html">History</a></li>
+        </ul>
+      <hr style="color: black; height: 5px;"/>
+    </header>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card">
+          <img id="food-image" alt="Food image">
+          <div class="card-body">
+            <h5 id="food-name" class="card-title">Nutrition</h5>
+            <div id="info" class="card-body">
+            </div>
+          
+            <button id="save-button" class="btn btn-primary mt-3">Save</button>
+          </div>        </div>
+      </div>
+      <div class="col-md-6">
+        <div id="webcam-container"></div>
+        <div id="label-container"></div>
+      </div>
+    </div>
+    <button id="start-button" class="btn btn-secondary btn-block">Start Cam</button>
+    <button id="stop-button" class="btn btn-secondary btn-block">Stop Cam</button>
+  </div>
+
+  <script>
+        const this_id = "user1";
+        const firebaseConfig = {
+        apiKey: "AIzaSyBugQFa7WZpr0bI9wM3tbaZ9J5KdZy6vUk",
+        authDomain: "smart-food-waste-bin.firebaseapp.com",
+        databaseURL: "https://smart-food-waste-bin-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "smart-food-waste-bin",
+        storageBucket: "smart-food-waste-bin.appspot.com",
+        messagingSenderId: "310754509109",
+        appId: "1:310754509109:web:730c96b2e9536932198c7c"
+        };        firebase.initializeApp(firebaseConfig);
+
+        const URL = './myfoodmodel/';
+        let model, webcam, labelContainer, maxPredictions, capimage;
+        let canvas;
+        var x; 
+        const database = firebase.database();
+        let kcal = 0; let weight = 0; let label = '';
+
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            // load the model and metadata
+            // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
+            // or files from your local hard drive
+            // Note: the pose library adds "tmImage" object to your window (window.tmImage)
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+            capimage = document.getElementById("capture");
+            canvas = document.createElement('canvas');
+
+            const flip = true; // whether to flip the webcam
+            webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
+            await webcam.setup({ facingMode: "environment" }); // request access to the webcam
+            await webcam.play();
+            window.requestAnimationFrame(loop);
+            //loop();
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) { // and class labels
+                labelContainer.appendChild(document.createElement("div"));
+            }
+
+
+            // append elements to the DOM
+            // console.log(webcam.canvas);
+        }
+        
+        async function loop() {
+            await webcam.update();
+            await predict();
+        }
+
+        async function predict() {
+            // predict can take in an image, video or canvas html element
+            const prediction = await model.predict(canvas);
+            for (let i = 0; i < 1; i++) {
+                // const classPrediction =
+                //     prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                const cls = prediction[i].className;
+                const prob = prediction[i].probability.toFixed(2);
+                // labelContainer.childNodes[i].innerHTML = classPrediction;
+                const classPrediction =
+                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+
+                showinfo(cls);
+            }
+        }
+
+        async function setfirebase(path, data) {
+            await database.ref(path).set(data);
+        }
+        
+        async function savebtn(leftoverweight) {
+          if (!leftoverweight) {
+            console.log("setuplisten");
+            return;
+          };
+          let foodData = { 'foodname': label, 'energy': kcal, 'leftover': leftoverweight, 'lost': (leftoverweight / weight * kcal) };
+          // Save the information to the database.
+          // Save the array to localStorage.
+          // localStorage.setItem("food-data", JSON.stringify(foodData));
+          if (localStorage.getItem("food-data") === null) {
+            // Create a new array
+            const foodDataArray = [];
+            // Add the food data to the array
+            foodDataArray.push((foodData));
+            // Set the "food-data" item in localStorage
+            localStorage.setItem("food-data", JSON.stringify(foodDataArray));
+          } else {
+            // Get the existing food data array from localStorage
+            const foodDataArray = JSON.parse(localStorage.getItem("food-data"));
+            // Add the new food data to the array
+            foodDataArray.push((foodData));
+            // Set the "food-data" item in localStorage
+            localStorage.setItem("food-data", JSON.stringify(foodDataArray));
+          }
+
+        }
+
+        async function showinfo(cls) {
+          const infobox = document.getElementById("info");
+          const foodname = document.getElementById("food-name");
+
+          fetch(`https://api.edamam.com/api/food-database/v2/parser?app_id=398aaecc&app_key=026491c2915f8ac6b782ec1b70f5f8db&ingr=${cls}&nutrition-type=logging&health=pescatarian&health=pork-free`)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.json();
+            })
+            .then(data => {
+              // Handle the JSON response data here
+              const base = data.parsed[0];
+              const quantity = base.quantity;
+              const measure = base.measure.label;
+              weight = measure.weight;
+              label = base.food.label;
+              const nutrients = base.food.nutrients;
+              kcal = nutrients['ENERC_KCAL'];
+              const protein = nutrients['PROCNT'];
+              foodname.innerHTML = label;
+
+              const p1 = document.createElement('p');
+              p1.innerHTML = `Quantity: ${quantity} ${measure}`;
+              const p2 = document.createElement('p');
+              p2.innerHTML = `Energy: ${kcal} kcal`;
+              const p3 = document.createElement('p');
+              p3.innerHTML = `Protein: ${protein} g`;
+              infobox.appendChild(p1);
+              infobox.appendChild(p2);
+              infobox.appendChild(p3);  
+            })
+            .catch(error => {
+              // Handle errors here
+              console.error('Fetch error:', error);
+            });
+        }
+        
+        document.getElementById("save-button").addEventListener("click", () => savebtn());
+        function setuplisten() {
+          database.ref("/bin/weight").on('value', function(snapshot) {
+          // This callback will be triggered whenever the value at the specified location changes
+          var updatedValue = snapshot.val();
+          savebtn(updatedValue);
+          });
+        }
+        setuplisten();
+        document.getElementById("start-button").addEventListener("click", () => {
+          init();
+        });
+        
+
+
+  </script>
+</body>
+
+</html>

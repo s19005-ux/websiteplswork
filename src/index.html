@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Your website description here">
-    <meta name="keywords" content="your, keywords, here">
     <meta name="author" content="Your Name">
-    <title>QR Code Generator</title>
+    <title>Smart food waste bin</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -58,30 +56,217 @@
             max-width: 100%;
             max-height: 100%;
         }
+        ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    li {
+      display: inline-block;
+      margin-right: 10px;
+    }
+    #greenCheckmark {
+            color: green;
+            font-size: 48px;
+            display: none;
+        }
+
+
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite@0.0.1-alpha.6/dist/tf-tflite.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
 </head>
 <body>
-    <button id="qrButton">Generate QR Code</button>
-
-    <div id="overlay">
-        <div id="qrCode">
-            <span id="closeButton" onclick="closeOverlay()">&#215;</span>
-            <!-- Your QR code image as a base64 data URI -->
-            <img src="frame.png" alt="QR Code">
+    <div class="container">
+        <header>
+          <h1 class="text-center">Smart food waste bin</h1>
+          <ul>
+            <li id="signin"><a href="index.html">Signin</a></li>
+            <li><a href="history.html">History</a></li>
+                </ul>
+          <hr style="color: black; height: 5px;"/>
+        </header>
+    
+        <button id="qrButton">Show QR Code</button>
+        <img id="capture"></img>
+        <div id="overlay">
+            <div id="qrCode">
+                <span id="closeButton" onclick="closeOverlay()">&#215;</span>
+                <!-- Your QR code image as a base64 data URI -->
+                <img src="frame.png" alt="QR Code">
+                <div id="greenCheckmark">&#10004;</div>
+            </div>
         </div>
     </div>
 
+
     <script>
+        const this_id = "Class 3";
+        const firebaseConfig = {
+        apiKey: "AIzaSyBugQFa7WZpr0bI9wM3tbaZ9J5KdZy6vUk",
+        authDomain: "smart-food-waste-bin.firebaseapp.com",
+        databaseURL: "https://smart-food-waste-bin-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "smart-food-waste-bin",
+        storageBucket: "smart-food-waste-bin.appspot.com",
+        messagingSenderId: "310754509109",
+        appId: "1:310754509109:web:730c96b2e9536932198c7c"
+        };        firebase.initializeApp(firebaseConfig);
+
+        const URL = './myqrmodel/';
+        let model, webcam, labelContainer, maxPredictions, capimage;
+        let canvas;
+        var x; 
+        const database = firebase.database();
+
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            // load the model and metadata
+            // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
+            // or files from your local hard drive
+            // Note: the pose library adds "tmImage" object to your window (window.tmImage)
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+            capimage = document.getElementById("capture");
+            canvas = document.createElement('canvas');
+
+            // const flip = true; // whether to flip the webcam
+            // webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
+            // await webcam.setup({ facingMode: "environment" }); // request access to the webcam
+            // await webcam.play();
+            clearInterval(x);
+            x = setInterval(() => loop(), 1000);
+            //window.requestAnimationFrame(loop);
+            //loop();
+
+            // append elements to the DOM
+            // console.log(webcam.canvas);
+        }
+        
+        async function loop() {
+            const update = (async () => {
+            // Define the URL of the image you want to fetch
+            const imageUrl = 'http://192.168.137.111/capture';
+
+            // Use the fetch function to make a GET request to the image URL
+            fetch(imageUrl)
+                .then(response => {
+                    if (response.ok) {
+                        // If the response is successful, display the image
+                        return response.blob(); // Parse the response as a binary blob
+                    
+                        // Convert the canvas back to an image
+                        // capimage = document.getElementById("capture");
+                        // capimage.src = canvas.toDataURL('image/jpeg'); // You can specify the desired format (e.g., 'image/jpeg')
+
+                        // predict();
+                    } else {
+                        console.error('Failed to fetch image.');
+                    }
+                })
+                .then (blob => {
+                    const imageUrl = window.URL.createObjectURL(blob);
+                    capimage.onload = function() {
+                            const newWidth = 200; // Set your desired width
+                            const newHeight = 200; // Set your desired height
+                            
+                            // Create a canvas element
+                            canvas = document.createElement("canvas");
+                            canvas.width = newWidth;
+                            canvas.height = newHeight;
+
+                            // Get the 2D rendering context of the canvas
+                            const ctx = canvas.getContext('2d');
+
+                            // Draw the image onto the canvas with the desired dimensions
+                            ctx.drawImage(capimage, 0, 0, newWidth, newHeight);
+                            
+                            canvas.addEventListener("load", function() {
+                                // The canvas is loaded.
+                                // Pass the canvas to the predict function.
+                                predict();
+                            });
+                    }
+                    capimage.src = imageUrl;
+
+                })              
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+            update();
+            predict();
+        }
+
+        // run the webcam image through the image model
+        async function prepredict() {
+            let cntr = {};
+            for (let i = 0; i < 5; ++i) {
+                const ret = await predict();
+                const cls = ret[0], prob = ret[1];
+                cntr[cls] = (cntr[cls] ? prob + cntr[cls] : prob);
+            }
+            const keyValueArray = Object.entries(cntr);
+
+            // Step 2: Sort the Array by Values (ascending order)
+            keyValueArray.sort((a, b) => a[1] - b[1]);
+            const sortedDictionary = Object.fromEntries(keyValueArray);
+            database.ref('/path/to/data').set(sortedDictionary[0][0]);
+
+        }
+        async function predict() {
+            // predict can take in an image, video or canvas html element
+            const prediction = await model.predict(canvas);
+            for (let i = 0; i < maxPredictions; i++) {
+                // const classPrediction =
+                //     prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                const cls = prediction[i].className;
+                const prob = prediction[i].probability.toFixed(2);
+                // labelContainer.childNodes[i].innerHTML = classPrediction;
+                if (cls === this_id) {
+                    await setfirebase("/userid", cls);
+                    showGreenCheckmark();
+                    setTimeout(() => {
+                        closeOverlay();
+                        redirectToPage();
+                    }, 2000); // Adjust the delay as needed (in milliseconds)
+                    
+                }
+            }
+        }
+        async function setfirebase(path, data) {
+            await database.ref(path).set(data);
+        }
+
         const qrButton = document.getElementById('qrButton');
         const overlay = document.getElementById('overlay');
+        const greenCheckmark = document.getElementById('greenCheckmark');
+
 
         qrButton.addEventListener('click', () => {
             overlay.style.display = 'block';
+            setTimeout(() => init(), 1000);
         });
 
         function closeOverlay() {
             overlay.style.display = 'none';
         }
+        function showGreenCheckmark() {
+            greenCheckmark.style.display = 'block';
+        }
+
+        function redirectToPage() {
+            // Redirect to your desired page
+            window.location.href = 'app.html'; // Replace with your target URL
+        }
+        
+
     </script>
 </body>
 </html>

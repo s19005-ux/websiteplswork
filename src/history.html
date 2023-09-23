@@ -1,0 +1,195 @@
+<html>
+<head>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    img {
+      display: block;
+      width: 224px;
+      height: 224px;
+      margin-right: 20px;
+      border-radius: 8px;
+    }
+
+    .credit {
+      margin-top: 6px;
+      display: inline-block;
+      font-size: 12px;
+      color: #999;
+    }
+
+    canvas {
+      border-radius: 8px;
+      position: absolute;
+    }
+
+    .result-container {
+      position: relative;
+      width: 224px;
+      height: 224px;
+    }
+
+    .trigger {
+      border: 1px dashed #ccc;
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #e28843;
+    }
+
+    .trigger:hover {
+      background-color: #eee;
+    }
+
+    .hide {
+      display: none;
+    }
+        /* Style for the video container */
+        #video-container {
+        position: relative;
+    }
+
+    /* Style for the video element */
+    #camera-feed {
+        width: 100%;
+        height: auto;
+    }
+
+    /* Style for the floating button */
+    #floating-button {
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        padding: 10px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 10%;
+        cursor: pointer;
+    }
+    .pantry {
+        color: orangered;
+        font-style: bold;
+    }
+    .refrigerate {
+        color: darkcyan;
+        font-style: bold;
+    }
+    .freeze {
+        color: darkblue;
+        font-style: bold;
+    }
+    .pantry_tips {
+        color: brown;
+        font-size: 1rem;
+        background-color: lightyellow;
+    }
+    .refrigerate_tips {
+        color: black;
+        font-size: 1rem;
+        background-color: lightblue;
+    }
+    ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    li {
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    a {
+      color: blue;
+      text-decoration: none;
+    }
+
+    .fas {
+      font-size: 20px;
+      color: blue;
+    }
+
+
+  </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.1/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes"> 
+  
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="text-center">Smart food waste bin</h1>
+            <ul>
+              <li>Signed in</li>
+              <li><a href="index.html">Sign out</a></li>
+              <li><a href="app.html">App</a></li>
+              </ul>
+            <hr style="color: black; height: 5px;"/>
+          </header>
+        <h1>Account</h1>
+      
+        <div class="card">
+          <div class="card-header">
+            <h2>Food History</h2>
+          </div>
+          <div class="card-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Food Name</th>
+                  <th>Energy</th>
+                  <th>Disposed weight</th>
+                  <th>Energy lost</th>
+                </tr>
+              </thead>
+              <tbody id="table">
+
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <script>
+document.addEventListener("DOMContentLoaded", function() {
+    const foodData = JSON.parse(localStorage.getItem("food-data"));
+    const tableBody = document.getElementById("table");
+    foodData.forEach(food => {
+        console.log(food);
+  const row = document.createElement("tr");
+
+  const foodNameCell = document.createElement("td");
+  foodNameCell.textContent = food.foodname;
+  row.appendChild(foodNameCell);
+
+  const shelfLifeCell = document.createElement("td");
+  shelfLifeCell.textContent = food.energy;
+  row.appendChild(shelfLifeCell);
+
+
+  const storageCell = document.createElement("td");
+  storageCell.textContent = food.leftover;
+  row.appendChild(storageCell);
+
+  const energyloose = document.createElement("td");
+  storageCell.textContent = food.lost;
+  row.appendChild(energyloose);
+
+  tableBody.appendChild(row);
+});
+
+});
+      </script>
+</body>
