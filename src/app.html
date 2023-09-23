@@ -148,7 +148,6 @@
     <div class="row">
       <div class="col-md-6">
         <div class="card">
-          <img id="food-image" alt="Food image">
           <div class="card-body">
             <h5 id="food-name" class="card-title">Nutrition</h5>
             <div id="info" class="card-body">
@@ -222,7 +221,7 @@
 
         async function predict() {
             // predict can take in an image, video or canvas html element
-            const prediction = await model.predict(canvas);
+            const prediction = await model.predict(webcam.canvas);
             for (let i = 0; i < 1; i++) {
                 // const classPrediction =
                 //     prediction[i].className + ": " + prediction[i].probability.toFixed(2);
@@ -297,6 +296,7 @@
               p2.innerHTML = `Energy: ${kcal} kcal`;
               const p3 = document.createElement('p');
               p3.innerHTML = `Protein: ${protein} g`;
+              infobox.innerHTML = "";
               infobox.appendChild(p1);
               infobox.appendChild(p2);
               infobox.appendChild(p3);  
