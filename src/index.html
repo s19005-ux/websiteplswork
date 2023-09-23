@@ -152,7 +152,7 @@
         async function loop() {
             const update = (async () => {
             // Define the URL of the image you want to fetch
-            const imageUrl = 'http://192.168.137.111/capture';
+            const imageUrl = 'http://192.168.137.159/capture';
 
             // Use the fetch function to make a GET request to the image URL
             fetch(imageUrl)
@@ -204,22 +204,6 @@
             predict();
         }
 
-        // run the webcam image through the image model
-        async function prepredict() {
-            let cntr = {};
-            for (let i = 0; i < 5; ++i) {
-                const ret = await predict();
-                const cls = ret[0], prob = ret[1];
-                cntr[cls] = (cntr[cls] ? prob + cntr[cls] : prob);
-            }
-            const keyValueArray = Object.entries(cntr);
-
-            // Step 2: Sort the Array by Values (ascending order)
-            keyValueArray.sort((a, b) => a[1] - b[1]);
-            const sortedDictionary = Object.fromEntries(keyValueArray);
-            database.ref('/path/to/data').set(sortedDictionary[0][0]);
-
-        }
         async function predict() {
             // predict can take in an image, video or canvas html element
             const prediction = await model.predict(canvas);
